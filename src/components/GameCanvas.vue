@@ -9,24 +9,17 @@
 
 <script setup lang="ts">
 import GameController from "../components/GameController.vue";
-import { onMounted, ref } from "vue";
-import useGame from "../composables/useGame";
-import usePlatforms from "../composables/usePlatforms";
-import useEnemies from "../composables/useEnemies";
-import { SCENE } from "../helpers/constants";
+import {onMounted, onUnmounted, ref} from "vue";
+import {usePlatforms} from "../stores/platforms";
+import {useEnemies} from "../stores/enemies";
+import {useGame} from "../stores/game";
+import {SCENE} from "../helpers/constants";
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
-// Используем хук для игры
-const {
-  move,
-  applyGravity,
-  draw,
-  checkCollisionWithEnemies,
-  checkEnemyElimination
-} = useGame();
-const {movePlatforms} = usePlatforms()
-const {moveEnemies} = useEnemies()
+const platformsStore = usePlatforms()
+const gameStore = useGame();
+const enemiesStore = useEnemies()
 
 const animate = () => {
   const canvas = canvasRef.value;
@@ -36,19 +29,21 @@ const animate = () => {
   if (!ctx) return;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  applyGravity();
-  move();
-  movePlatforms();
-  moveEnemies();
-  checkCollisionWithEnemies()
-  checkEnemyElimination()
-  draw(ctx);
+  gameStore.applyGravity();
+  gameStore.move();
+  platformsStore.movePlatforms();
+  enemiesStore.moveEnemies();
+  gameStore.checkCollisionWithEnemies()
+  gameStore.checkEnemyElimination()
+  gameStore.draw(ctx);
   requestAnimationFrame(animate);
 };
 
 onMounted(() => {
-  animate(); // Запускаем анимацию при монтировании
+  animate()
+  enemiesStore.spawnEnemy()
 });
+onUnmounted(() => enemiesStore.resetEnemies())
 </script>
 
 <style scoped>

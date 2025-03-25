@@ -7,20 +7,16 @@ interface Coordinates {
   y: number;
 }
 
-export interface IUnit {
-  width: number;
-  height: number;
-}
-export interface IScene {
-  width: number;
-  height: number;
-}
+export type IUnitConfig = Size
+export type IUnit = Size & Coordinates
+
+export type IScene = Size
 
 export interface IPlatform extends Size, Coordinates {
   dx: number;
 }
 
-export interface IEnemies extends Size, Coordinates {
+export interface IEnemy extends Size, Coordinates {
   direction: number;
   isAlive: boolean;
 }

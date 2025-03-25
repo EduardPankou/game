@@ -1,47 +1,31 @@
-import {ref} from "vue";
-import {UNIT, SCENE} from "../helpers/constants";
-import usePlatforms from "./usePlatforms";
-import useEnemies from "./useEnemies";
+import {defineStore} from 'pinia'
+import {UNIT, GROUND_LEVEL} from "../helpers/constants";
+import {usePlatforms} from "./platforms";
+import {useEnemies} from "./enemies";
+import useScore from "../composables/useScore";
+import useKeyHandler from "../composables/useKeyHandler";
+import useUnit from "../composables/useUnit";
 
-const x = ref<number>(50); // Позиция по X
-const y = ref<number>(750); // Позиция по Y
-const velocityY = ref<number>(0); // Скорость по Y
-const score = ref<number>(0); // Скорость по Y
-const isJumping = ref<boolean>(false); // Флаг прыжка
-const keys = ref<Record<string, boolean>>({}); // Состояние клавиш
+export const useGame = defineStore('game', () => {
+  const enemiesStore = useEnemies()
+  const platformsStore = usePlatforms()
 
-
-// Хук для игры
-export default function useGame() {
   const {
-    platforms,
-    drawPlatforms
-  } = usePlatforms()
-  const {
-    enemies,
-    drawEnemies,
-    resetEnemies
-  } = useEnemies()
-
-  const speed: number = 5; // Скорость движения
-  const gravity: number = 0.5; // Сила гравитации
-  const jumpPower: number = -12; // Сила прыжка
-  const groundLevel: number = 750; // Координата земли (граница падения)
-
-  // Логика движения квадрата
-  const move = () => {
-    if ((keys.value.ArrowRight || keys.value.d) && x.value + UNIT.width < SCENE.width) {
-      x.value += speed;
-    }
-    if ((keys.value.ArrowLeft || keys.value.a) && x.value > 0) {
-      x.value -= speed;
-    }
-  };
+    x,
+    y,
+    velocityY,
+    isJumping,
+    jumpPower,
+    gravity,
+    move
+  } = useUnit()
+  const {score, drawScore} = useScore()
+  const {keys} = useKeyHandler()
 
   // Применяем гравитацию
-  const applyGravity = () => {
+  const applyGravity = (): void => {
     // Проверка столкновения с платформами
-    for (const platform of platforms.value) {
+    for (const platform of platformsStore.platforms) {
       if (
         y.value + UNIT.height <= platform.y &&
         y.value + UNIT.height + velocityY.value >= platform.y &&
@@ -62,13 +46,13 @@ export default function useGame() {
       isJumping.value = false;
     }
 
-    if (y.value + UNIT.height < groundLevel) {
+    if (y.value + UNIT.height < GROUND_LEVEL) {
       // Если квадрат не на земле, применяем гравитацию
       velocityY.value += gravity;
       y.value += velocityY.value;
     } else {
       // Если квадрат на земле, не двигаем его
-      y.value = groundLevel - UNIT.height;
+      y.value = GROUND_LEVEL - UNIT.height;
       velocityY.value = 0;
 
       if (isJumping.value) {
@@ -78,7 +62,7 @@ export default function useGame() {
   };
 
   // Прыжок
-  const jump = () => {
+  const jump = (): void => {
     if (!isJumping.value) {
       velocityY.value = jumpPower;
       isJumping.value = true;
@@ -86,24 +70,39 @@ export default function useGame() {
   };
 
   // Рисуем квадрат
-  const draw = (ctx: CanvasRenderingContext2D) => {
+  const draw = (ctx: CanvasRenderingContext2D): void => {
     ctx.fillStyle = 'blue';
     ctx.fillRect(x.value, y.value, UNIT.width, UNIT.height);
 
-    drawPlatforms(ctx)
-    drawEnemies(ctx)
+    platformsStore.drawPlatforms(ctx)
+    enemiesStore.drawEnemies(ctx)
+    drawScore(ctx)
   };
 
   // Проверка столкновения с врагами
-  const checkCollisionWithEnemies = () => {
-    for (const enemy of enemies.value) {
-      if (
-        enemy.isAlive &&
-        x.value + 100 > enemy.x &&
-        x.value < enemy.x + enemy.width &&
-        y.value + 100 > enemy.y &&
-        y.value < enemy.y + enemy.height
-      ) {
+  const checkCollisionWithEnemies = (): void => {
+    for (let i = enemiesStore.enemies.length - 1; i >= 0; i--) {
+      const enemy = enemiesStore.enemies[i];
+
+      if (!enemy.isAlive) continue;
+
+      const xCollision: boolean = (x.value + UNIT.width) > enemy.x &&
+        x.value < (enemy.x + enemy.width)
+      const yCollision: boolean = (y.value + UNIT.height) > enemy.y &&
+        y.value < (enemy.y + enemy.height)
+      const isColliding: boolean = xCollision && yCollision
+
+      if (isColliding) {
+        const isJumpingOnEnemy: boolean = y.value + UNIT.height - velocityY.value <= enemy.y;
+
+        if (isJumpingOnEnemy) {
+          enemiesStore.enemies.splice(i, 1);
+          enemy.isAlive = false;
+          velocityY.value = jumpPower / 1.5; // Подпрыгиваем на 50% от обычного прыжка
+          score.value += 1;
+          continue
+        }
+
         // Столкновение с врагом — перезапуск игры
         reset();
         score.value = 0; // Сброс очков при столкновении
@@ -112,8 +111,8 @@ export default function useGame() {
     }
   };
 
-  const checkEnemyElimination = () => {
-    for (const enemy of enemies.value) {
+  const checkEnemyElimination = (): void => {
+    for (const enemy of enemiesStore.enemies) {
       if (
         enemy.isAlive
         && x.value + UNIT.width > enemy.x
@@ -127,12 +126,12 @@ export default function useGame() {
     }
   };
 
-  const reset = () => {
-    x.value = 50;
-    y.value = 750;
+  const reset = (): void => {
+    x.value = UNIT.x;
+    y.value = UNIT.y;
     velocityY.value = 0;
     isJumping.value = false;
-    resetEnemies()
+    enemiesStore.resetEnemies()
   };
 
   return {
@@ -149,5 +148,5 @@ export default function useGame() {
     checkCollisionWithEnemies,
     checkEnemyElimination,
     reset
-  };
-};
+  }
+})

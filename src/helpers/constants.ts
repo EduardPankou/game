@@ -1,18 +1,22 @@
-import {IEnemies} from "../types/unit";
+import {IUnitConfig} from "../types/unit";
 import {IUnit, IScene} from "../types/unit";
 
-export const ENEMIES_DEFAULT_VALUES: IEnemies[] = [
-  { x: 300, y: 700, width: 50, height: 50, direction: 1, isAlive: true },
-  { x: 100, y: 500, width: 50, height: 50, direction: -1, isAlive: true }
-]
+export const ENEMY_CONFIG: IUnitConfig = {
+  width: 50,
+  height: 50
+}
 
 
 export const UNIT: IUnit = {
   width: 20,
-  height: 20
+  height: 20,
+  x: 50,
+  y: 750
 }
 
 export const SCENE: IScene = {
-  width: 900,
-  height: 800
+  width: 800,
+  height: 750
 }
+
+export const GROUND_LEVEL: number = 750
