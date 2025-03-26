@@ -1,6 +1,6 @@
 import {defineStore} from 'pinia'
 import {ref} from "vue";
-import {IPlatform} from "../types/unit";
+import {IPlatform} from "../types";
 import {SCENE} from "../helpers/constants";
 
 export const usePlatforms = defineStore('platforms', () => {

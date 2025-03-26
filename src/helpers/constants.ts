@@ -1,22 +1,21 @@
-import {IUnitConfig} from "../types/unit";
-import {IUnit, IScene} from "../types/unit";
+import {IUnitConfig, IUnit, IScene} from "../types";
 
 export const ENEMY_CONFIG: IUnitConfig = {
-  width: 50,
-  height: 50
-}
+  width: 80,
+  height: 80
+} as const
 
 
 export const UNIT: IUnit = {
-  width: 20,
-  height: 20,
+  width: 100,
+  height: 100,
   x: 50,
   y: 750
-}
+} as const
 
 export const SCENE: IScene = {
-  width: 800,
+  width: 900,
   height: 750
-}
+} as const
 
-export const GROUND_LEVEL: number = 750
+export const GROUND_LEVEL: number = 750 as const

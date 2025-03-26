@@ -20,3 +20,7 @@ export interface IEnemy extends Size, Coordinates {
   direction: number;
   isAlive: boolean;
 }
+
+export interface IInitUnitStats {
+  initialHp: number
+}

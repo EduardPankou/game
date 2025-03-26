@@ -1,7 +1,7 @@
 import {defineStore} from 'pinia'
 import {ref} from "vue";
 import {SCENE, ENEMY_CONFIG} from "../helpers/constants";
-import {IEnemy} from "../types/unit";
+import {IEnemy} from "../types";
 
 export const useEnemies = defineStore('enemies', () => {
   const enemies = ref<IEnemy[]>([]);
@@ -51,9 +51,11 @@ export const useEnemies = defineStore('enemies', () => {
   };
 
   const drawEnemies = (ctx: CanvasRenderingContext2D) => {
-    ctx.fillStyle = "red";
+    const enemyImage = new Image();
+    enemyImage.src = "/images/enemy.png";
+
     for (const enemy of enemies.value) {
-      ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+      ctx.drawImage(enemyImage, enemy.x, enemy.y, enemy.width, enemy.height);
     }
   }
 

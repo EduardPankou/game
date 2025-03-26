@@ -28,15 +28,17 @@ const animate = () => {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  gameStore.applyGravity();
-  gameStore.move();
-  platformsStore.movePlatforms();
-  enemiesStore.moveEnemies();
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  gameStore.applyGravity()
+  gameStore.move()
+  platformsStore.movePlatforms()
+  enemiesStore.moveEnemies()
+  gameStore.updateBackground()
+  gameStore.moveHearts()
+  gameStore.checkHeartCollisions()
   gameStore.checkCollisionWithEnemies()
-  gameStore.checkEnemyElimination()
-  gameStore.draw(ctx);
-  requestAnimationFrame(animate);
+  gameStore.draw(ctx)
+  requestAnimationFrame(animate)
 };
 
 onMounted(() => {

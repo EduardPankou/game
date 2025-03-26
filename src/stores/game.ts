@@ -4,7 +4,9 @@ import {usePlatforms} from "./platforms";
 import {useEnemies} from "./enemies";
 import useScore from "../composables/useScore";
 import useKeyHandler from "../composables/useKeyHandler";
-import useUnit from "../composables/useUnit";
+import useHero from "../composables/useHero";
+import useFallingStuff from "../composables/useFallingStuff";
+import useBackground from "../composables/useBackground";
 
 export const useGame = defineStore('game', () => {
   const enemiesStore = useEnemies()
@@ -17,21 +19,32 @@ export const useGame = defineStore('game', () => {
     isJumping,
     jumpPower,
     gravity,
-    move
-  } = useUnit()
+    hp,
+    move,
+    drawHero,
+    drawHp,
+    resetStats,
+    resetHero
+  } = useHero()
   const {score, drawScore} = useScore()
   const {keys} = useKeyHandler()
+  const {drawBackground, updateBackground} = useBackground({image: 'background.webp'})
+  const {
+    hearts,
+    moveHearts,
+    drawStuff
+  } = useFallingStuff()
 
   // Применяем гравитацию
   const applyGravity = (): void => {
     // Проверка столкновения с платформами
     for (const platform of platformsStore.platforms) {
-      if (
-        y.value + UNIT.height <= platform.y &&
+      const isColliding: boolean = y.value + UNIT.height <= platform.y &&
         y.value + UNIT.height + velocityY.value >= platform.y &&
         x.value + UNIT.width > platform.x &&
         x.value < platform.x + platform.width
-      ) {
+
+      if (isColliding) {
         y.value = platform.y - UNIT.height;
         velocityY.value = 0;
         isJumping.value = false;
@@ -61,9 +74,25 @@ export const useGame = defineStore('game', () => {
     }
   };
 
+  const checkPlatformCollisions = (): boolean => {
+    for (const platform of platformsStore.platforms) {
+      const isTouchingPlatform =
+        x.value + UNIT.width > platform.x &&
+        x.value < platform.x + platform.width &&
+        y.value + UNIT.height >= platform.y &&
+        y.value + UNIT.height <= platform.y + 10; // Учитываем небольшую погрешность
+
+      if (isTouchingPlatform) {
+        return isTouchingPlatform
+      }
+    }
+    return false
+  };
+
   // Прыжок
   const jump = (): void => {
-    if (!isJumping.value) {
+    const onGround: boolean = y.value === (GROUND_LEVEL - UNIT.height)
+    if (!isJumping.value && (onGround || checkPlatformCollisions())) {
       velocityY.value = jumpPower;
       isJumping.value = true;
     }
@@ -71,12 +100,33 @@ export const useGame = defineStore('game', () => {
 
   // Рисуем квадрат
   const draw = (ctx: CanvasRenderingContext2D): void => {
-    ctx.fillStyle = 'blue';
-    ctx.fillRect(x.value, y.value, UNIT.width, UNIT.height);
-
+    drawBackground(ctx)
     platformsStore.drawPlatforms(ctx)
     enemiesStore.drawEnemies(ctx)
     drawScore(ctx)
+    drawHp(ctx)
+    drawStuff(ctx)
+    drawHero(ctx)
+  };
+
+  const checkHeartCollisions = () => {
+    for (let i = hearts.value.length - 1; i >= 0; i--) {
+      const heart = hearts.value[i];
+
+      const isColliding =
+        x.value + UNIT.width > heart.x &&
+        x.value < heart.x + heart.size &&
+        y.value + UNIT.height > heart.y &&
+        y.value < heart.y + heart.size;
+
+      if (isColliding) {
+        // Удаляем сердце и увеличиваем жизни (максимум 5)
+        hearts.value.splice(i, 1);
+        if (hp.value < 5) {
+          hp.value += 1;
+        }
+      }
+    }
   };
 
   // Проверка столкновения с врагами
@@ -84,7 +134,7 @@ export const useGame = defineStore('game', () => {
     for (let i = enemiesStore.enemies.length - 1; i >= 0; i--) {
       const enemy = enemiesStore.enemies[i];
 
-      if (!enemy.isAlive) continue;
+      if (!enemy?.isAlive) continue;
 
       const xCollision: boolean = (x.value + UNIT.width) > enemy.x &&
         x.value < (enemy.x + enemy.width)
@@ -96,42 +146,29 @@ export const useGame = defineStore('game', () => {
         const isJumpingOnEnemy: boolean = y.value + UNIT.height - velocityY.value <= enemy.y;
 
         if (isJumpingOnEnemy) {
-          enemiesStore.enemies.splice(i, 1);
           enemy.isAlive = false;
-          velocityY.value = jumpPower / 1.5; // Подпрыгиваем на 50% от обычного прыжка
+          enemiesStore.enemies.splice(i, 1);
+          velocityY.value = jumpPower / 1.5;
           score.value += 1;
           continue
         }
 
-        // Столкновение с врагом — перезапуск игры
-        reset();
-        score.value = 0; // Сброс очков при столкновении
-        break;
-      }
-    }
-  };
+        hp.value--
 
-  const checkEnemyElimination = (): void => {
-    for (const enemy of enemiesStore.enemies) {
-      if (
-        enemy.isAlive
-        && x.value + UNIT.width > enemy.x
-        && x.value < enemy.x + enemy.width
-        && y.value + UNIT.height > enemy.y
-        && y.value < enemy.y + enemy.height
-      ) {
-        enemy.isAlive = false; // Уничтожение врага
-        score.value += 100; // Добавляем очки
+        if (hp.value <= 0) {
+          reset();
+          score.value = 0;
+        } else {
+          resetHero()
+        }
       }
     }
   };
 
   const reset = (): void => {
-    x.value = UNIT.x;
-    y.value = UNIT.y;
-    velocityY.value = 0;
-    isJumping.value = false;
+    resetHero()
     enemiesStore.resetEnemies()
+    resetStats()
   };
 
   return {
@@ -145,8 +182,10 @@ export const useGame = defineStore('game', () => {
     jump,
     applyGravity,
     draw,
+    moveHearts,
+    checkHeartCollisions,
     checkCollisionWithEnemies,
-    checkEnemyElimination,
+    updateBackground,
     reset
   }
 })
