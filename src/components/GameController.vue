@@ -3,10 +3,10 @@
 </template>
 
 <script setup lang="ts">
-import useKeyHandler from "../composables/useKeyHandler";
+import {useKeyboard} from "../stores/keyboard";
 import {onMounted, onUnmounted} from "vue";
 
-const {addKeysListeners, removeKeysListeners} = useKeyHandler()
+const {addKeysListeners, removeKeysListeners} = useKeyboard()
 
 onMounted(() => addKeysListeners());
 onUnmounted(() => removeKeysListeners());

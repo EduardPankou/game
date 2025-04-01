@@ -19,3 +19,9 @@ export const SCENE: IScene = {
 } as const
 
 export const GROUND_LEVEL: number = 750 as const
+
+export const DIRECTION_TYPE = {
+  LEFT: -1,
+  RIGHT: 1,
+  STOP: 0
+}

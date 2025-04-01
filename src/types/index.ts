@@ -12,6 +12,8 @@ export type IUnit = Size & Coordinates
 
 export type IScene = Size
 
+export type IIsMove = -1 | 1 | 0
+
 export interface IPlatform extends Size, Coordinates {
   dx: number;
 }

@@ -1,6 +1,9 @@
 import {ref} from "vue";
-import {SCENE, UNIT} from "../helpers/constants";
-import useKeyHandler from "./useKeyHandler";
+import {storeToRefs} from 'pinia'
+import {IIsMove} from "../types";
+import {UNIT, DIRECTION_TYPE} from "../helpers/constants";
+import {isXMove} from "../utills/hero";
+import {useKeyboard} from "../stores/keyboard";
 import useUnitStats from "./useUnitStats";
 
 export default function useHero() {
@@ -13,20 +16,25 @@ export default function useHero() {
   const gravity: number = 0.5; // Сила гравитации
   const jumpPower: number = -12; // Сила прыжка
 
-  const {keys} = useKeyHandler()
+  const {keys} = storeToRefs(useKeyboard())
   const {
     hp,
     drawHp,
     resetStats
   } = useUnitStats({initialHp: 3})
 
-  const move = (): void => {
-    if ((keys.value.ArrowRight || keys.value.d) && x.value + UNIT.width < SCENE.width) {
+  const move = (): IIsMove => {
+    const isMove = isXMove({keys: keys.value, x: x.value})
+    if (isMove === DIRECTION_TYPE.STOP) return isMove
+
+    if (isMove === DIRECTION_TYPE.RIGHT) {
       x.value += speed;
     }
-    if ((keys.value.ArrowLeft || keys.value.a) && x.value > 0) {
+    if (isMove === DIRECTION_TYPE.LEFT) {
       x.value -= speed;
     }
+
+    return isMove
   };
 
   const drawHero = (ctx: CanvasRenderingContext2D): void => {

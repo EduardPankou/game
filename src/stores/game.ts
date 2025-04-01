@@ -1,9 +1,10 @@
-import {defineStore} from 'pinia'
+import {defineStore, storeToRefs} from 'pinia'
+import {IIsMove} from "../types";
 import {UNIT, GROUND_LEVEL} from "../helpers/constants";
 import {usePlatforms} from "./platforms";
 import {useEnemies} from "./enemies";
+import {useKeyboard} from "./keyboard";
 import useScore from "../composables/useScore";
-import useKeyHandler from "../composables/useKeyHandler";
 import useHero from "../composables/useHero";
 import useFallingStuff from "../composables/useFallingStuff";
 import useBackground from "../composables/useBackground";
@@ -11,6 +12,10 @@ import useBackground from "../composables/useBackground";
 export const useGame = defineStore('game', () => {
   const enemiesStore = useEnemies()
   const platformsStore = usePlatforms()
+
+  const {platforms} = storeToRefs(platformsStore)
+  const {enemies} = storeToRefs(enemiesStore)
+  const {keys} = storeToRefs(useKeyboard())
 
   const {
     x,
@@ -20,15 +25,14 @@ export const useGame = defineStore('game', () => {
     jumpPower,
     gravity,
     hp,
-    move,
+    move: moveHero,
     drawHero,
     drawHp,
     resetStats,
     resetHero
   } = useHero()
   const {score, drawScore} = useScore()
-  const {keys} = useKeyHandler()
-  const {drawBackground, updateBackground} = useBackground({image: 'background.webp'})
+  const {drawBackground, updateBackground} = useBackground()
   const {
     hearts,
     moveHearts,
@@ -38,7 +42,7 @@ export const useGame = defineStore('game', () => {
   // Применяем гравитацию
   const applyGravity = (): void => {
     // Проверка столкновения с платформами
-    for (const platform of platformsStore.platforms) {
+    for (const platform of platforms.value) {
       const isColliding: boolean = y.value + UNIT.height <= platform.y &&
         y.value + UNIT.height + velocityY.value >= platform.y &&
         x.value + UNIT.width > platform.x &&
@@ -75,7 +79,7 @@ export const useGame = defineStore('game', () => {
   };
 
   const checkPlatformCollisions = (): boolean => {
-    for (const platform of platformsStore.platforms) {
+    for (const platform of platforms.value) {
       const isTouchingPlatform =
         x.value + UNIT.width > platform.x &&
         x.value < platform.x + platform.width &&
@@ -131,8 +135,8 @@ export const useGame = defineStore('game', () => {
 
   // Проверка столкновения с врагами
   const checkCollisionWithEnemies = (): void => {
-    for (let i = enemiesStore.enemies.length - 1; i >= 0; i--) {
-      const enemy = enemiesStore.enemies[i];
+    for (let i = enemies.value.length - 1; i >= 0; i--) {
+      const enemy = enemies.value[i];
 
       if (!enemy?.isAlive) continue;
 
@@ -147,7 +151,7 @@ export const useGame = defineStore('game', () => {
 
         if (isJumpingOnEnemy) {
           enemy.isAlive = false;
-          enemiesStore.enemies.splice(i, 1);
+          enemies.value.splice(i, 1);
           velocityY.value = jumpPower / 1.5;
           score.value += 1;
           continue
@@ -164,6 +168,11 @@ export const useGame = defineStore('game', () => {
       }
     }
   };
+
+  const move = () => {
+    const direction: IIsMove = moveHero()
+    updateBackground(direction)
+  }
 
   const reset = (): void => {
     resetHero()
@@ -185,7 +194,6 @@ export const useGame = defineStore('game', () => {
     moveHearts,
     checkHeartCollisions,
     checkCollisionWithEnemies,
-    updateBackground,
     reset
   }
 })

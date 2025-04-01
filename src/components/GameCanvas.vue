@@ -17,9 +17,20 @@ import {SCENE} from "../helpers/constants";
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
-const platformsStore = usePlatforms()
-const gameStore = useGame();
-const enemiesStore = useEnemies()
+const {movePlatforms} = usePlatforms()
+const {
+  applyGravity,
+  move,
+  moveHearts,
+  checkHeartCollisions,
+  checkCollisionWithEnemies,
+  draw
+} = useGame();
+const {
+  moveEnemies,
+  spawnEnemy,
+  resetEnemies
+} = useEnemies()
 
 const animate = () => {
   const canvas = canvasRef.value;
@@ -29,23 +40,22 @@ const animate = () => {
   if (!ctx) return;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height)
-  gameStore.applyGravity()
-  gameStore.move()
-  platformsStore.movePlatforms()
-  enemiesStore.moveEnemies()
-  gameStore.updateBackground()
-  gameStore.moveHearts()
-  gameStore.checkHeartCollisions()
-  gameStore.checkCollisionWithEnemies()
-  gameStore.draw(ctx)
+  applyGravity()
+  move()
+  movePlatforms()
+  moveEnemies()
+  moveHearts()
+  checkHeartCollisions()
+  checkCollisionWithEnemies()
+  draw(ctx)
   requestAnimationFrame(animate)
 };
 
 onMounted(() => {
   animate()
-  enemiesStore.spawnEnemy()
+  spawnEnemy()
 });
-onUnmounted(() => enemiesStore.resetEnemies())
+onUnmounted(() => resetEnemies())
 </script>
 
 <style scoped>

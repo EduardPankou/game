@@ -1,11 +1,11 @@
-import {useGame} from "../stores/game";
+import {defineStore} from 'pinia'
 import {ref} from "vue";
+import {useGame} from "./game";
 
-const keys = ref<Record<string, boolean>>({}); // Состояние клавиш
-
-export default function useKeyHandler() {
+export const useKeyboard = defineStore('keyboard', () => {
+  const keys = ref<Record<string, boolean>>({});
   const gameStore = useGame();
-  
+
   const handleKeyDown = (event: KeyboardEvent): void => {
     gameStore.keys[event.key] = true;
     if ([' ', 'ArrowUp'].includes(event.key)) {
@@ -32,4 +32,4 @@ export default function useKeyHandler() {
     addKeysListeners,
     removeKeysListeners
   }
-}
+})
